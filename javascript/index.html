@@ -127,6 +127,7 @@
     function canvia() {
      let valor = 0;
        valor++;
+  const el = document.getElementById('text');
   document.getElementById('text').innerText = valor;
   document.getElementById('text').innerText = "Adeu";
   document.getElementById('text').color = "#ffc0cb";
@@ -140,6 +141,7 @@
         document.body.setAttribute('data-bs-theme', 'light');
         themeIcon.classList.remove('fa-sun');
         themeIcon.classList.add('fa-moon');
+         el.style.display = el.style.display === "none" ? "block" : "none";
       } else {
         document.body.setAttribute('data-bs-theme', 'dark');
         themeIcon.classList.remove('fa-moon');
