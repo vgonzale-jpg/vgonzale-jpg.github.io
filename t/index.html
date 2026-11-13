@@ -1,0 +1,988 @@
+
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test t de Student — Bilateral vs Unilateral, amb exemple real</title>
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+<style>
+  :root {
+    --verd: #2e7d32;
+    --verd-fosc: #1b5e20;
+    --verd-clar: #e8f5e9;
+    --groc: #fff8e1;
+    --taronja: #ef6c00;
+    --blau: #1565c0;
+    --blau-clar: #e3f2fd;
+    --vermell: #c62828;
+    --vermell-clar: #ffebee;
+    --gris: #f5f5f5;
+    --text: #1a1a1a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    max-width: 1050px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+    line-height: 1.65;
+    color: var(--text);
+    background: #fafafa;
+  }
+  h1 { color: var(--verd-fosc); border-bottom: 3px solid var(--verd); padding-bottom: .3rem; font-size: 1.45rem; }
+  h2 { color: var(--verd); margin-top: 2.2rem; font-size: 1.2rem; border-left: 4px solid var(--verd); padding-left: .6rem; }
+  h3 { color: var(--verd-fosc); font-size: 1.05rem; margin-top: 1.5rem; }
+
+  .box {
+    background: #fff;
+    border-left: 5px solid var(--verd);
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .box.nota { background: var(--groc); border-left-color: var(--taronja); font-size: .93rem; }
+  .box.result { background: var(--verd-clar); border-left-color: var(--verd-fosc); font-weight: 600; }
+  .box.avís { background: var(--vermell-clar); border-left-color: var(--vermell); }
+  .box.info { background: var(--blau-clar); border-left-color: var(--blau); }
+  .box.objectiu { background: #e8f5e9; border-left-color: var(--verd); border-left-width: 8px; }
+
+  /* Comparativa bilateral / unilateral */
+  .dues-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .dues-cols > div {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .dues-cols .bil { border-top: 4px solid var(--blau); }
+  .dues-cols .uni { border-top: 4px solid var(--vermell); }
+  .dues-cols h4 { margin: 0 0 .5rem; font-size: 1rem; }
+  .dues-cols .bil h4 { color: var(--blau); }
+  .dues-cols .uni h4 { color: var(--vermell); }
+  @media (max-width: 640px) { .dues-cols { grid-template-columns: 1fr; } }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    align-items: center;
+    margin: 1rem 0;
+    background: #fff;
+    padding: .8rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .controls label { font-weight: 600; font-size: .92rem; }
+  .controls select,
+  .controls input[type="number"] {
+    padding: .45rem .6rem;
+    border: 1px solid #c8e6c9;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #fff;
+    min-width: 90px;
+  }
+  .controls button {
+    padding: .5rem .9rem;
+    border: none;
+    border-radius: 6px;
+    background: var(--verd);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: .92rem;
+  }
+  .controls button:hover { background: var(--verd-fosc); }
+  .controls button.reset { background: #757575; }
+
+  /* Taula responsive */
+  .taula-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    background: #fff;
+    max-height: 520px;
+    overflow-y: auto;
+  }
+  table.tstudent {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 620px;
+    font-size: .92rem;
+  }
+  table.tstudent th,
+  table.tstudent td {
+    border: 1px solid #c8e6c9;
+    padding: .45rem .55rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+  table.tstudent thead th {
+    background: var(--verd);
+    color: #fff;
+    position: sticky;
+    top: 0;
+    cursor: pointer;
+    user-select: none;
+    font-size: .88rem;
+  }
+  table.tstudent thead th:hover { background: var(--verd-fosc); }
+  table.tstudent thead th::after { content: ""; margin-left: 4px; font-size: .7rem; }
+  table.tstudent thead th.asc::after  { content: "▲"; }
+  table.tstudent thead th.desc::after { content: "▼"; }
+  table.tstudent tbody tr:nth-child(even) { background: var(--gris); }
+  table.tstudent tbody tr:hover { background: var(--verd-clar); }
+
+  /* Fila ∞ ben destacada dins la taula */
+  table.tstudent tbody tr.fila-inf {
+    background: #ede7f6 !important;
+    font-weight: 700;
+    color: #4527a0;
+    border-top: 2px solid #4527a0;
+  }
+  table.tstudent tbody tr.fila-inf td:first-child { font-size: 1.1rem; }
+
+  /* Fila destacada per l'usuari */
+  table.tstudent tbody tr.highlight {
+    background: #ffeb3b !important;
+    font-weight: 700;
+    outline: 2px solid var(--taronja);
+    outline-offset: -2px;
+  }
+  table.tstudent td.col-active {
+    background: var(--verd-clar);
+    font-weight: 700;
+    color: var(--verd-fosc);
+  }
+
+  /* Caixa resultat */
+  #resultatWelch {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #fff;
+    border-left: 5px solid var(--taronja);
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    font-size: .95rem;
+  }
+  #resultatWelch strong { color: var(--verd-fosc); }
+
+  /* Targeta d'exemple */
+  .exemple-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: .8rem;
+    margin: 1rem 0;
+  }
+  .exemple-grid .dada {
+    background: #fff;
+    border-radius: 8px;
+    padding: .9rem 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    border-top: 3px solid var(--verd);
+  }
+  .exemple-grid .dada .et {
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #666;
+    font-weight: 600;
+  }
+  .exemple-grid .dada .val {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--verd-fosc);
+    margin-top: .2rem;
+  }
+  .exemple-grid .dada .det {
+    font-size: .82rem;
+    color: #555;
+    margin-top: .2rem;
+  }
+
+  /* Passos numerats */
+  .passos {
+    counter-reset: pas;
+    list-style: none;
+    padding-left: 0;
+  }
+  .passos > li {
+    counter-increment: pas;
+    position: relative;
+    padding-left: 2.6rem;
+    margin-bottom: .9rem;
+  }
+  .passos > li::before {
+    content: counter(pas);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--verd);
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .95rem;
+  }
+
+  /* Glossari */
+  .glossari {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .glossari dl { margin: 0; }
+  .glossari dt { font-weight: 700; color: var(--verd-fosc); margin-top: .7rem; }
+  .glossari dd { margin: .2rem 0 0 0; padding-left: 1rem; color: #333; font-size: .93rem; }
+
+  /* Fórmules destacades */
+  .formula-destacada {
+    background: #fff;
+    border: 1px solid #c8e6c9;
+    border-radius: 8px;
+    padding: .6rem 1rem;
+    margin: .6rem 0;
+    overflow-x: auto;
+  }
+
+  /* Targetes de nutrients */
+  .nutrients-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: .8rem;
+    margin: 1rem 0;
+  }
+  .nutrients-grid .nut {
+    background: #fff;
+    border-radius: 8px;
+    padding: .8rem 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    border-left: 4px solid var(--verd);
+  }
+  .nutrients-grid .nut .nom {
+    font-weight: 700;
+    color: var(--verd-fosc);
+    font-size: .95rem;
+  }
+  .nutrients-grid .nut .ex {
+    font-size: .85rem;
+    color: #555;
+    margin-top: .2rem;
+  }
+
+  @media (max-width: 600px) {
+    body { font-size: 15px; padding: 0 .6rem; }
+    h1 { font-size: 1.2rem; }
+    table.tstudent { font-size: .82rem; min-width: 560px; }
+    table.tstudent th, table.tstudent td { padding: .35rem .35rem; }
+    .controls { gap: .4rem; }
+    .controls select, .controls input, .controls button { font-size: .85rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Test t de Student: bilateral vs. unilateral, taula interactiva i exemple real</h1>
+
+<!-- ============================================================ -->
+<!-- SECCIÓ 0 — OBJECTIU I CONTEXT INICIAL                        -->
+<!-- ============================================================ -->
+<h2>0. Objectiu d'aquest document: buscar ciència real i calcular</h2>
+
+<div class="box objectiu">
+  <p style="margin:0 0 .6rem"><strong>Què has de saber fer al final?</strong></p>
+  <ol style="margin:0;padding-left:1.3rem">
+    <li><strong>Buscar informació científica en articles originals</strong> que comparen aliments <strong>ecològics</strong> vs. <strong>convencionals</strong>.</li>
+    <li><strong>Extreure'n dades reals</strong> de nutrients (vitamines, minerals, polifenols, etc.).</li>
+    <li><strong>Calcular</strong> \(n\), mitjana i desviació estàndard a partir d'aquestes dades.</li>
+    <li><strong>Aplicar</strong> un contrast t de Welch (bilateral o unilateral) i <strong>interpretar</strong> el resultat amb la taula t de Student.</li>
+  </ol>
+</div>
+
+<h3>0.1. Per què comparar ecològic vs. convencional?</h3>
+
+<p>Hi ha molta literatura científica que compara el contingut de nutrients entre aliments conreats en <strong>agricultura ecològica</strong> i en <strong>agricultura convencional</strong>. Les diferències poden venir de:</p>
+
+<ul>
+  <li><strong>Pràctiques agrícoles</strong> (adobs, pesticides, rotació de cultius).</li>
+  <li><strong>Tipus de sòl</strong> i disponibilitat de minerals.</li>
+  <li><strong>Varietats</strong> cultivades i grau de maduració.</li>
+  <li><strong>Estrès de la planta</strong> (pot afavorir la síntesi de compostos defensius com els polifenols).</li>
+  <li><strong>Condicions post-collita</strong> i emmagatzematge.</li>
+</ul>
+
+<p>El debat científic no està tancat: alguns estudis troben diferències significatives, d'altres no. <strong>La teva feina</strong> és agafar un article original concret i comprovar-ho amb dades reals.</p>
+
+<h3>0.2. Quins nutrients es comparen habitualment</h3>
+
+<div class="nutrients-grid">
+  <div class="nut">
+    <div class="nom">Vitamines</div>
+    <div class="ex">Vitamina C, vitamina E, carotenoides (provitamina A), vitamines del grup B (folat, etc.).</div>
+  </div>
+  <div class="nut">
+    <div class="nom">Minerals</div>
+    <div class="ex">Ferro, zinc, magnesi, calci, potassi, fòsfor, seleni.</div>
+  </div>
+  <div class="nut">
+    <div class="nom">Polifenols</div>
+    <div class="ex">Flavonoides, antocianines, àcids fenòlics, tanins. Són antioxidants.</div>
+  </div>
+  <div class="nut">
+    <div class="nom">Altres compostos bioactius</div>
+    <div class="ex">Glucosinolats (bròquil), carotenoides (tomàquet), organosulfurs (all).</div>
+  </div>
+  <div class="nut">
+    <div class="nom">Paràmetres de qualitat</div>
+    <div class="ex">Matèria seca, sucres, acidesa, contingut en proteïna o greix.</div>
+  </div>
+  <div class="nut">
+    <div class="nom">Contaminants</div>
+    <div class="ex">Residus de pesticides, nitrats, metalls pesants (també es comparen).</div>
+  </div>
+</div>
+
+<h3>0.3. On buscar articles originals</h3>
+
+<div class="box info">
+  <p style="margin:0 0 .5rem"><strong>Fonts recomanades</strong> (totes gratuïtes per cercar, algunes requereixen accés al text complet):</p>
+  <ul style="margin:0">
+    <li><strong>PubMed</strong> — <code>pubmed.ncbi.nlm.nih.gov</code> · el més usat en nutrició i biomedicina.</li>
+    <li><strong>Google Scholar</strong> — <code>scholar.google.com</code> · cerca àmplia; sovint enllaça al PDF.</li>
+  
+    <li><strong>DOAJ</strong> — <code>doaj.org</code> · revistes d'accés obert.</li>
+    <li><strong>SciELO</strong> — <code>scielo.org</code> · revistes iberoamericanes d'accés obert.</li>
+    <li><strong>Repositoris institucionals</strong> (TDX, Dipòsit Digital UB, etc.) per a tesis i treballs.</li>
+  </ul>
+</div>
+
+<h3>0.4. Com construir la cerca (paraules clau útils)</h3>
+
+<div class="box nota">
+  <p style="margin:0 0 .4rem">Combina el <strong>nom de l'aliment</strong> amb el <strong>nutrient</strong> i paraules com aquestes:</p>
+  <ul style="margin:0">
+    <li><code>organic</code> vs <code>conventional</code></li>
+    <li><code>content</code>, <code>composition</code>, <code>comparison</code></li>
+    <li><code>vitamin C</code>, <code>polyphenols</code>, <code>minerals</code>, <code>antioxidant capacity</code></li>
+    <li><code>systematic review</code> o <code>meta-analysis</code> (per context, però per al treball cal un <em>article original</em>)</li>
+  </ul>
+  <p style="margin:.5rem 0 0"><strong>Exemple de cerca:</strong> <code>tomato organic conventional lycopene content</code></p>
+</div>
+
+<h3>0.5. Què ha de tenir l'article per ser útil</h3>
+
+<div class="box">
+  <p style="margin:0 0 .4rem"><strong>Checklist abans de començar a calcular:</strong></p>
+  <ul style="margin:0">
+    <li>✅ És un <strong>article original</strong> (no una revisió ni un resum de congrés).</li>
+    <li>✅ Compara <strong>almenys dos grups</strong> (ecològic vs convencional, o dues condicions).</li>
+    <li>✅ Dóna la <strong>mitjana</strong> del nutrient per grup.</li>
+    <li>✅ Dóna la <strong>desviació estàndard (SD)</strong> o l'error estàndard (SE) — si és SE, es pot recuperar la SD amb \(s = SE \cdot \sqrt{n}\).</li>
+    <li>✅ Dóna la <strong>mida de mostra \(n\)</strong> de cada grup.</li>
+    <li>✅ Les mostres són <strong>independents</strong> (grups diferents, no el mateix grup abans/després).</li>
+    <li>✅ Publicat en una <strong>revista revisada per parells</strong>.</li>
+  </ul>
+</div>
+
+<div class="box avís">
+  <strong>Compte amb:</strong> els articles que comparen «abans/després» en el mateix grup requereixen un test t per a mostres <em>aparellades</em>, no el de Welch. Si l'article té més de dos grups, caldria una ANOVA. Per a aquest treball, busca <strong>exactament dos grups independents</strong>.
+</div>
+
+<!-- ============================================================ -->
+<h2>1. Bilateral vs. unilateral: què és i quan s'usa</h2>
+
+<p>Un <strong>contrast d'hipòtesis</strong> compara dues hipòtesis sobre un paràmetre (per exemple, la mitjana d'un nutrient en dos aliments):</p>
+
+<div class="box">
+  \[
+    H_0: \mu_A = \mu_B \quad \text{(hipòtesi nul·la: no hi ha diferència)}
+  \]
+  <p style="margin:.4rem 0 0">La <strong>hipòtesi alternativa</strong> \(H_1\) és la que canvia segons el tipus de contrast:</p>
+</div>
+
+<div class="dues-cols">
+  <div class="bil">
+    <h4>Contrast bilateral (dues cues)</h4>
+    <p><strong>Hipòtesis:</strong></p>
+    \[ H_1: \mu_A \neq \mu_B \]
+    <p><strong>Què pregunta:</strong> «Hi ha alguna diferència, en qualsevol direcció?»</p>
+    <p><strong>Zona de rebuig:</strong> repartida a les <strong>dues cues</strong> de la distribució (α/2 a cada costat).</p>
+    <p><strong>Quan s'usa:</strong> quan <em>no tens cap motiu previ</em> per esperar que A sigui més gran o més petit que B. És el cas més habitual.</p>
+    <div class="formula-destacada">
+      \[ p = 2 \cdot P(T > |t_{\text{obs}}|) \qquad \alpha/2 \text{ a cada cua} \]
+    </div>
+  </div>
+  <div class="uni">
+    <h4>Contrast unilateral (una cua)</h4>
+    <p><strong>Hipòtesis (exemple cap a la dreta):</strong></p>
+    \[ H_1: \mu_A > \mu_B \]
+    <p><strong>Què pregunta:</strong> «A és <em>significativament més gran</em> que B?» (o més petit, segons el cas).</p>
+    <p><strong>Zona de rebuig:</strong> tota l'α concentrada en <strong>una sola cua</strong>.</p>
+    <p><strong>Quan s'usa:</strong> només si <em>abans de veure les dades</em> ja tens una raó teòrica sòlida per esperar una direcció concreta.</p>
+    <div class="formula-destacada">
+      \[ p = P(T > t_{\text{obs}}) \qquad \alpha \text{ en una sola cua} \]
+    </div>
+  </div>
+</div>
+
+<div class="box avís">
+  <strong>Regla d'or:</strong> el tipus de contrast es decideix <strong>abans</strong> de mirar les dades. Canviar de bilateral a unilateral després de veure els resultats per «fer sortir significatiu» és una mala praxi estadística (infla el risc d'error tipus I).
+</div>
+
+<h3>1.1. Com es tradueix això a la taula t</h3>
+
+<div class="box nota">
+  <p>La taula t de Student pot presentar-se de dues maneres:</p>
+  <ul>
+    <li><strong>Taula amb α/2 (per a contrast bilateral):</strong> la columna α/2 = 0,025 correspon a un contrast bilateral amb α = 0,05. <em>Aquesta és la que fem servir per defecte.</em></li>
+    <li><strong>Taula amb α directe (per a contrast unilateral):</strong> la columna α = 0,05 correspon a un contrast unilateral amb α = 0,05.</li>
+  </ul>
+  <p style="margin:.5rem 0 0"><strong>Relació clau:</strong> el valor crític \(t_{0{,}025}\) bilateral és <strong>més gran</strong> que el \(t_{0{,}05}\) unilateral per als mateixos graus de llibertat. Per tant, <strong>el contrast bilateral és més conservador</strong> (més difícil rebutjar H₀).</p>
+</div>
+
+<div class="box">
+  <table style="width:100%;border-collapse:collapse;font-size:.92rem">
+    <thead>
+      <tr style="background:#e8f5e9">
+        <th style="border:1px solid #c8e6c9;padding:.4rem">Concepte</th>
+        <th style="border:1px solid #c8e6c9;padding:.4rem">Bilateral</th>
+        <th style="border:1px solid #c8e6c9;padding:.4rem">Unilateral</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #c8e6c9;padding:.4rem"><strong>H₁</strong></td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">\(\mu_A \neq \mu_B\)</td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">\(\mu_A > \mu_B\) (o &lt;)</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #c8e6c9;padding:.4rem"><strong>Zona de rebuig</strong></td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">α/2 a cada cua</td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">α en una cua</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #c8e6c9;padding:.4rem"><strong>Columna de la taula (α=0,05)</strong></td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">α/2 = 0,025 → \(t_{0{,}025}\)</td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">α = 0,05 → \(t_{0{,}05}\)</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #c8e6c9;padding:.4rem"><strong>Valor crític (df = 10)</strong></td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">2,228</td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">1,812</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #c8e6c9;padding:.4rem"><strong>És més conservador?</strong></td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">Sí (valor crític més gran)</td>
+        <td style="border:1px solid #c8e6c9;padding:.4rem">No (més fàcil rebutjar H₀)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. La fórmula del test t de Welch (dues mostres independents)</h2>
+
+<p>Quan compares dues mostres independents i <strong>no pots assumir que les variàncies són iguals</strong>, fem servir el <strong>test t de Welch</strong>. La diferència respecte al t de Student clàssic és que no agrupa les variàncies, sinó que les pondera per separat.</p>
+
+<div class="box">
+  <p><strong>Estadístic t:</strong></p>
+  \[
+    t = \frac{\bar{x}_A - \bar{x}_B}{\sqrt{\dfrac{s_A^2}{n_A} + \dfrac{s_B^2}{n_B}}}
+  \]
+  <p style="margin:.6rem 0 0"><strong>Graus de llibertat de Welch (aproximats):</strong></p>
+  \[
+    df = \frac{\left(\dfrac{s_A^2}{n_A} + \dfrac{s_B^2}{n_B}\right)^2}
+             {\dfrac{\left(s_A^2/n_A\right)^2}{n_A-1} + \dfrac{\left(s_B^2/n_B\right)^2}{n_B-1}}
+  \]
+</div>
+
+<p>On:</p>
+<ul>
+  <li>\(\bar{x}_A, \bar{x}_B\) = mitjanes de cada grup</li>
+  <li>\(s_A^2, s_B^2\) = variàncies mostrals de cada grup</li>
+  <li>\(n_A, n_B\) = mides de mostra de cada grup</li>
+</ul>
+
+<div class="box nota">
+  <strong>Notació important:</strong> \(s^2\) és la <strong>variància</strong>. La <strong>desviació estàndard</strong> és \(s = \sqrt{s^2}\). En els articles científics sovint donen la desviació estàndard (SD) o l'error estàndard (SE). No els confonguis!
+  <ul style="margin:.4rem 0 0">
+    <li>\(SD = s\) (dispersió de les dades individuals)</li>
+    <li>\(SE = s / \sqrt{n}\) (precisió de la mitjana)</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2>3. Exemple concret complet (amb dades il·lustratives)</h2>
+
+<div class="box nota">
+  <strong>Escenari.</strong> Un equip de recerca vol comparar el contingut de <strong>vitamina C (mg/100 g)</strong> en pomes ecològiques (grup A) vs. pomes convencionals (grup B). Han mesurat 5 pomes de cada tipus. Volem un contrast <strong>bilateral</strong> amb α = 0,05.
+</div>
+
+<h3>3.1. Dades originals (les 5 mesures de cada grup)</h3>
+
+<div class="exemple-grid">
+  <div class="dada">
+    <div class="et">Grup A — Ecològiques</div>
+    <div class="val">8,2 · 8,9 · 8,7 · 9,1 · 8,8</div>
+    <div class="det">5 mesures (mg/100 g)</div>
+  </div>
+  <div class="dada">
+    <div class="et">Grup B — Convencionals</div>
+    <div class="val">8,1 · 8,0 · 8,2 · 7,9 · 8,0</div>
+    <div class="det">5 mesures (mg/100 g)</div>
+  </div>
+</div>
+
+<h3>3.2. Càlcul pas a pas de \(n\), mitjana i desviació estàndard</h3>
+
+<p>Per a cada grup calculem tres estadístics bàsics. Els mostrem amb fórmules i amb el resultat numèric.</p>
+
+<div class="box">
+  <h4 style="margin:0 0 .4rem">Grup A (ecològiques)</h4>
+  <p><strong>1) Mida de mostra \(n_A\):</strong> comptem quantes mesures tenim.</p>
+  \[ n_A = 5 \]
+  <p><strong>2) Mitjana \(\bar{x}_A\):</strong> suma de totes les dades dividida pel nombre de dades.</p>
+  \[
+    \bar{x}_A = \frac{8{,}2 + 8{,}9 + 8{,}7 + 9{,}1 + 8{,}8}{5}
+             = \frac{43{,}7}{5} = 8{,}74
+  \]
+  <p><strong>3) Variància mostral \(s_A^2\):</strong> mitjana dels quadrats de les desviacions respecte a la mitjana, dividint per \(n-1\) (correcció de Bessel).</p>
+  \[
+    s_A^2 = \frac{\sum (x_i - \bar{x}_A)^2}{n_A - 1}
+  \]
+  <p>Desviacions: \(8{,}2-8{,}74=-0{,}54\); \(8{,}9-8{,}74=0{,}16\); \(8{,}7-8{,}74=-0{,}04\); \(9{,}1-8{,}74=0{,}36\); \(8{,}8-8{,}74=0{,}06\).</p>
+  \[
+    s_A^2 = \frac{0{,}2916 + 0{,}0256 + 0{,}0016 + 0{,}1296 + 0{,}0036}{4}
+         = \frac{0{,}452}{4} = 0{,}113
+  \]
+  <p><strong>4) Desviació estàndard \(s_A\):</strong> arrel quadrada de la variància.</p>
+  \[
+    s_A = \sqrt{0{,}113} \approx 0{,}336
+  \]
+</div>
+
+<div class="box">
+  <h4 style="margin:0 0 .4rem">Grup B (convencionals)</h4>
+  <p><strong>1) Mida de mostra \(n_B\):</strong></p>
+  \[ n_B = 5 \]
+  <p><strong>2) Mitjana \(\bar{x}_B\):</strong></p>
+  \[
+    \bar{x}_B = \frac{8{,}1 + 8{,}0 + 8{,}2 + 7{,}9 + 8{,}0}{5}
+             = \frac{40{,}2}{5} = 8{,}04
+  \]
+  <p><strong>3) Variància mostral \(s_B^2\):</strong></p>
+  <p>Desviacions: \(8{,}1-8{,}04=0{,}06\); \(8{,}0-8{,}04=-0{,}04\); \(8{,}2-8{,}04=0{,}16\); \(7{,}9-8{,}04=-0{,}14\); \(8{,}0-8{,}04=-0{,}04\).</p>
+  \[
+    s_B^2 = \frac{0{,}0036 + 0{,}0016 + 0{,}0256 + 0{,}0196 + 0{,}0016}{4}
+         = \frac{0{,}052}{4} = 0{,}013
+  \]
+  <p><strong>4) Desviació estàndard \(s_B\):</strong></p>
+  \[
+    s_B = \sqrt{0{,}013} \approx 0{,}114
+  \]
+</div>
+
+<h3>3.3. Resum en taula</h3>
+
+<div class="taula-wrap" style="max-height:none">
+  <table class="tstudent" style="min-width:520px">
+    <thead>
+      <tr>
+        <th>Grup</th>
+        <th>\(n\)</th>
+        <th>Mitjana \(\bar{x}\)</th>
+        <th>Variància \(s^2\)</th>
+        <th>Desv. est. \(s\)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Ecològiques (A)</td>
+        <td>5</td>
+        <td>8,74</td>
+        <td>0,113</td>
+        <td>0,336</td>
+      </tr>
+      <tr>
+        <td>Convencionals (B)</td>
+        <td>5</td>
+        <td>8,04</td>
+        <td>0,013</td>
+        <td>0,114</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>3.4. Càlcul del test t de Welch</h3>
+
+<div class="box">
+  <p><strong>Estadístic t:</strong></p>
+  \[
+    t = \frac{8{,}74 - 8{,}04}{\sqrt{\dfrac{0{,}113}{5} + \dfrac{0{,}013}{5}}}
+      = \frac{0{,}70}{\sqrt{0{,}0226 + 0{,}0026}}
+      = \frac{0{,}70}{\sqrt{0{,}0252}}
+      = \frac{0{,}70}{0{,}1587} \approx 4{,}41
+  \]
+  <p><strong>Graus de llibertat de Welch:</strong></p>
+  \[
+    df = \frac{(0{,}0226 + 0{,}0026)^2}{\dfrac{0{,}0226^2}{4} + \dfrac{0{,}0026^2}{4}}
+       = \frac{0{,}0252^2}{0{,}0001277 + 0{,}0000017}
+       \approx 4{,}90 \;\to\; \text{s'arrodoneix cap avall a } 4
+  \]
+</div>
+
+<div class="box result">
+  Amb \(t \approx 4{,}41\) i \(df \approx 4\), mirem la taula bilateral per α = 0,05. El valor crític és \(t_{0{,}025}(4) = 2{,}776\). Com que \(4{,}41 > 2{,}776\), <strong>rebutgem H₀</strong> i concloem que hi ha diferència significativa entre els dos tipus de pomes.
+</div>
+
+<!-- ============================================================ -->
+<h2>4. Taula t de Student interactiva (amb fila ∞)</h2>
+
+<div class="box info">
+  <p>La taula mostra els valors crítics <strong>bilaterals</strong> per a cada nivell α. La columna que es mostra correspon a <strong>α/2</strong> perquè estem fent un contrast bilateral. També inclou una fila especial <strong>∞</strong> (graus de llibertat infinits) que és, de fet, la distribució normal estàndard <em>z</em> — molt útil quan df &gt; 120.</p>
+  <p style="margin:.4rem 0 0"><strong>Com fer-lo servir per a un contrast unilateral:</strong> si la taula et mostra α/2 = 0,025 (per a α bilateral 0,05), per a un unilateral amb α = 0,05 has de buscar la columna α/2 = 0,05 de la mateixa fila. La diferència és subtil però important!</p>
+</div>
+
+<div class="controls">
+  <label for="alphaSel">Nivell α:</label>
+  <select id="alphaSel">
+    <option value="0.10">0,10 (bilateral)</option>
+    <option value="0.05" selected>0,05 (bilateral)</option>
+    <option value="0.02">0,02 (bilateral)</option>
+    <option value="0.01">0,01 (bilateral)</option>
+    <option value="0.001">0,001 (bilateral)</option>
+  </select>
+
+  <label for="dfInput">Ressalta df =</label>
+  <input type="number" id="dfInput" min="1" max="200" step="1" placeholder="p. ex. 4" value="4">
+
+  <button id="btnReset" class="reset" type="button">Reinicia</button>
+</div>
+
+<div class="taula-wrap">
+  <table class="tstudent" id="taulaT">
+    <thead>
+      <tr>
+        <th data-key="df" class="asc">df</th>
+        <th data-key="col0">t (α/2)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div id="resultatWelch">
+  <strong>Resultat del contrast d'exemple:</strong>
+  Amb <span id="resT">t = 4,41</span> i <span id="resDf">df ≈ 4,90 (arrodonit a 4)</span>,
+  el valor crític bilateral per α = <span id="resAlpha">0,05</span> és
+  <strong>t<sub>crit</sub> = <span id="resCrit">2,776</span></strong>.
+  Com que |t| <span id="resCmp">&gt;</span> t<sub>crit</sub>,
+  <strong><span id="resDecisio">rebutgem H₀</span></strong>.
+</div>
+
+<h3>Com llegir la taula (resum)</h3>
+<div class="box">
+  <ul>
+    <li><strong>α bilateral</strong> = 0,05 → columna \(t_{0{,}025}\) (dues cues).</li>
+    <li>Per a <strong>una cua</strong>, fes servir la columna de \(t_{0{,}05}\) de la mateixa fila.</li>
+    <li>El valor de <strong>Welch</strong> s'arrodoneix habitualment <strong>cap avall</strong> (criteri conservador) abans de buscar a la taula.</li>
+    <li>Si \(df > 120\), fes servir la fila <strong>∞</strong> (z ≈ 1,960 per α = 0,05 bilateral).</li>
+    <li>La fila <strong>∞</strong> està destacada en violeta al final de la taula: és la distribució normal estàndard.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2>5. Guia per a l'alumne: buscar dades reals en un article</h2>
+
+<div class="box avís">
+  <strong>Enunciat del treball.</strong> El professor t'ha assignat un aliment concret. Has de buscar un <strong>article científic original</strong> que contingui dades reals de nutrients d'aquest aliment (vitamines, minerals, polifenols…), comparant <strong>aliments ecològics vs. convencionals</strong> (o dues condicions equivalents), i has de calcular o extreure <strong>n</strong>, <strong>mitjana</strong> i <strong>desviació estàndard</strong> de les dues mostres per aplicar el test t de Welch.
+</div>
+
+<p>Segueix aquests passos:</p>
+
+<ol class="passos">
+  <li>
+    <strong>Identifica l'aliment i el nutrient.</strong> Per exemple: «nous → greix total», «espinacs → ferro», «salmó → omega-3», «tomàquet → licopè». El professor t'haurà assignat l'aliment; tu tries el nutrient que aparegui a l'article.
+  </li>
+  <li>
+    <strong>Cerca un article científic original.</strong> Fes servir PubMed, Google Scholar, Web of Science, DOAJ o SciELO. Paraules clau: nom de l'aliment + nutrient + «organic vs conventional» + «content» o «composition».
+  </li>
+  <li>
+    <strong>Comprova que l'article és vàlid.</strong> Ha de ser un <strong>article original</strong> (no una revisió), amb <strong>dades numèriques</strong> (mitjanes, SD, n) i publicat en una <strong>revista revisada per parells</strong>.
+  </li>
+  <li>
+    <strong>Localitza les dades que necessites.</strong> Busca una taula o text on apareguin:
+    <ul>
+      <li>La <strong>mitjana</strong> del nutrient en cada grup/condició.</li>
+      <li>La <strong>desviació estàndard</strong> (SD). Si donen l'error estàndard (SE), pots recuperar la SD amb \(s = SE \cdot \sqrt{n}\).</li>
+      <li>La <strong>mida de mostra</strong> \(n\) de cada grup.</li>
+    </ul>
+  </li>
+  <li>
+    <strong>Comprova que hi ha dues mostres independents.</strong> El test t de Welch requereix dos grups que no es creuen. Si l'article compara el mateix grup abans/després, has de fer servir un test t per a mostres aparellades (diferent!). Si tens més de dos grups, caldria ANOVA.
+  </li>
+  <li>
+    <strong>Extreu les dades a una taula</strong> com la de l'apartat 3.3 d'aquest document. Si l'article dóna la SD, ja la pots fer servir directament. Si només dóna la variància, recorda \(s = \sqrt{s^2}\).
+  </li>
+  <li>
+    <strong>Aplica la fórmula del test t de Welch</strong> (apartat 2). Calcula \(t\) i els \(df\) de Welch.
+  </li>
+  <li>
+    <strong>Decideix el tipus de contrast.</strong> Si l'article o el professor no indica una direcció esperada, fes-lo <strong>bilateral</strong>. Si hi ha una raó teòrica clara per esperar que un grup sigui més gran, pots plantejar-te'l unilateral.
+  </li>
+  <li>
+    <strong>Compara amb la taula t</strong> (apartat 4) i escriu la conclusió: rebutgem o no rebutgem H₀, i què implica en el context de l'aliment.
+  </li>
+</ol>
+
+<div class="box nota">
+  <strong>Consell pràctic:</strong> si l'article no dóna la SD directament, sovint la trobaràs a les taules com «mean ± SD» o «mean (SD)». Si només dóna intervals de confiança (IC 95%), pots recuperar aproximadament la SD amb:
+  \[
+    s \approx \frac{\text{amplada de l'IC}}{2 \cdot 1{,}96} \cdot \sqrt{n}
+  \]
+  Però sempre que puguis, busca un article que doni la SD directament.
+</div>
+
+<!-- ============================================================ -->
+<h2>6. Glossari ràpid</h2>
+
+<div class="glossari">
+  <dl>
+    <dt>H₀ (hipòtesi nul·la)</dt>
+    <dd>La hipòtesi que no hi ha diferència entre els grups (\(\mu_A = \mu_B\)). És la que intentem rebutjar.</dd>
+
+    <dt>H₁ (hipòtesi alternativa)</dt>
+    <dd>La hipòtesi que sí que hi ha diferència (bilateral) o que un grup és més gran que l'altre (unilateral).</dd>
+
+    <dt>α (nivell de significació)</dt>
+    <dd>La probabilitat màxima que estem disposats a acceptar de rebutjar H₀ quan en realitat és certa. Típicament 0,05.</dd>
+
+    <dt>p (valor p)</dt>
+    <dd>La probabilitat d'obtenir un resultat tan extrem com l'observat, si H₀ fos certa. Si \(p < \alpha\), rebutgem H₀.</dd>
+
+    <dt>t<sub>crit</sub> (valor crític)</dt>
+    <dd>El valor de la taula t que separa la zona de rebuig de la d'acceptació, per a un α i uns df donats.</dd>
+
+    <dt>df (graus de llibertat)</dt>
+    <dd>Els «graus de llibertat» de la distribució t. En el test de Welch es calculen amb una fórmula especial (apartat 2) i sovint no són enters.</dd>
+
+    <dt>n (mida de mostra)</dt>
+    <dd>El nombre d'observacions de cada grup.</dd>
+
+    <dt>\(\bar{x}\) (mitjana mostral)</dt>
+    <dd>La suma de les dades dividida per \(n\).</dd>
+
+    <dt>\(s^2\) (variància mostral)</dt>
+    <dd>La mitjana dels quadrats de les desviacions respecte a la mitjana, dividint per \(n-1\).</dd>
+
+    <dt>s (desviació estàndard)</dt>
+    <dd>L'arrel quadrada de la variància. Mesura la dispersió de les dades en les mateixes unitats que la mitjana.</dd>
+
+    <dt>SE (error estàndard)</dt>
+    <dd>\(s / \sqrt{n}\). Mesura la precisió de la mitjana com a estimació. No és el mateix que la SD.</dd>
+
+    <dt>Bilateral (dues cues)</dt>
+    <dd>Contrast on H₁ diu que els grups són diferents, sense especificar direcció. La zona de rebuig es reparteix entre les dues cues.</dd>
+
+    <dt>Unilateral (una cua)</dt>
+    <dd>Contrast on H₁ especifica una direcció (A &gt; B o A &lt; B). La zona de rebuig es concentra en una sola cua.</dd>
+
+    <dt>∞ (infinit a la taula t)</dt>
+    <dd>La fila que representa la distribució normal estàndard (z). S'usa quan df &gt; 120. Per α bilateral 0,05, \(z_{0{,}025} = 1{,}960\).</dd>
+  </dl>
+</div>
+
+<!-- ============================================================ -->
+<script>
+/* ============================================================
+   Taula t de Student bilateral (α/2) per df = 1..40, 45, 50,
+   60, 80, 100, 120 i ∞. Valors oficials.
+   ============================================================ */
+const TAULA_T = {
+  // df : [α/2=0.10, 0.05, 0.025, 0.01, 0.005, 0.0005]
+  // (α bilateral = 0.20, 0.10, 0.05, 0.02, 0.01, 0.001)
+  1:  [3.078, 6.314, 12.706, 31.821, 63.657, 636.619],
+  2:  [1.886, 2.920,  4.303,  6.965,  9.925,  31.599],
+  3:  [1.638, 2.353,  3.182,  4.541,  5.841,  12.924],
+  4:  [1.533, 2.132,  2.776,  3.747,  4.604,   8.610],
+  5:  [1.476, 2.015,  2.571,  3.365,  4.032,   6.869],
+  6:  [1.440, 1.943,  2.447,  3.143,  3.707,   5.959],
+  7:  [1.415, 1.895,  2.365,  2.998,  3.499,   5.408],
+  8:  [1.397, 1.860,  2.306,  2.896,  3.355,   5.041],
+  9:  [1.383, 1.833,  2.262,  2.821,  3.250,   4.781],
+  10: [1.372, 1.812,  2.228,  2.764,  3.169,   4.587],
+  11: [1.363, 1.796,  2.201,  2.718,  3.106,   4.437],
+  12: [1.356, 1.782,  2.179,  2.681,  3.055,   4.318],
+  13: [1.350, 1.771,  2.160,  2.650,  3.012,   4.221],
+  14: [1.345, 1.761,  2.145,  2.624,  2.977,   4.140],
+  15: [1.341, 1.753,  2.131,  2.602,  2.947,   4.073],
+  16: [1.337, 1.746,  2.120,  2.583,  2.921,   4.015],
+  17: [1.333, 1.740,  2.110,  2.567,  2.898,   3.965],
+  18: [1.330, 1.734,  2.101,  2.552,  2.878,   3.922],
+  19: [1.328, 1.729,  2.093,  2.539,  2.861,   3.883],
+  20: [1.325, 1.725,  2.086,  2.528,  2.845,   3.850],
+  21: [1.323, 1.721,  2.080,  2.518,  2.831,   3.819],
+  22: [1.321, 1.717,  2.074,  2.508,  2.819,   3.792],
+  23: [1.319, 1.714,  2.069,  2.500,  2.807,   3.768],
+  24: [1.318, 1.711,  2.064,  2.492,  2.797,   3.745],
+  25: [1.316, 1.708,  2.060,  2.485,  2.787,   3.725],
+  26: [1.315, 1.706,  2.056,  2.479,  2.779,   3.707],
+  27: [1.314, 1.703,  2.052,  2.473,  2.771,   3.690],
+  28: [1.313, 1.701,  2.048,  2.467,  2.763,   3.674],
+  29: [1.311, 1.699,  2.045,  2.462,  2.756,   3.659],
+  30: [1.310, 1.697,  2.042,  2.457,  2.750,   3.646],
+  35: [1.306, 1.690,  2.030,  2.438,  2.724,   3.591],
+  40: [1.303, 1.684,  2.021,  2.423,  2.704,   3.551],
+  45: [1.301, 1.679,  2.014,  2.412,  2.690,   3.520],
+  50: [1.299, 1.676,  2.009,  2.403,  2.678,   3.496],
+  60: [1.296, 1.671,  2.000,  2.390,  2.660,   3.460],
+  80: [1.292, 1.664,  1.990,  2.374,  2.639,   3.416],
+  100:[1.290, 1.660,  1.984,  2.364,  2.626,   3.390],
+  120:[1.289, 1.658,  1.980,  2.358,  2.617,   3.373],
+  '∞':[1.282, 1.645,  1.960,  2.326,  2.576,   3.291]
+};
+
+/* Mapatge α bilateral -> índex de columna (α/2) i etiqueta */
+const MAP_ALPHA = {
+  '0.10': {idx: 1, label: '0,05'},
+  '0.05': {idx: 2, label: '0,025'},
+  '0.02': {idx: 3, label: '0,01'},
+  '0.01': {idx: 4, label: '0,005'},
+  '0.001':{idx: 5, label: '0,0005'}
+};
+
+/* Estat */
+let ordreAsc = true;
+let dfDestacat = 4;
+let alphaActual = '0.05';
+
+/* Funcions auxiliars */
+function getFiles() {
+  return Object.keys(TAULA_T).map(k => k === '∞' ? Infinity : parseInt(k))
+                              .sort((a,b) => a-b);
+}
+
+function getValor(df, idx) {
+  const files = getFiles().filter(f => f !== Infinity);
+  let triada = null;
+  for (const f of files) {
+    if (f <= df) triada = f;
+  }
+  if (df > 120) triada = '∞';
+  return { dfReal: triada, valor: TAULA_T[triada][idx] };
+}
+
+function renderTaula() {
+  const tbody = document.querySelector('#taulaT tbody');
+  const thead = document.querySelector('#taulaT thead tr');
+  const idx = MAP_ALPHA[alphaActual].idx;
+  const label = MAP_ALPHA[alphaActual].label;
+
+  thead.innerHTML = `
+    <th data-key="df" class="${ordreAsc?'asc':'desc'}">df</th>
+    <th data-key="col0">t<sub>${label}</sub> (α/2)</th>
+  `;
+
+  const files = getFiles();
+  const filesOrdenades = ordreAsc ? files : [...files].reverse();
+
+  tbody.innerHTML = '';
+  filesOrdenades.forEach(df => {
+    const tr = document.createElement('tr');
+    const valor = TAULA_T[df][idx];
+    const esInf = df === Infinity;
+    const esDestacada = (dfDestacat === df) || (esInf && dfDestacat > 120);
+
+    if (esInf) tr.classList.add('fila-inf');
+    if (esDestacada) tr.classList.add('highlight');
+
+    tr.innerHTML = `
+      <td>${esInf ? '∞' : df}</td>
+      <td class="${esDestacada ? 'col-active' : ''}">${valor.toFixed(3).replace('.',',')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  thead.querySelectorAll('th').forEach(th => {
+    th.addEventListener('click', () => {
+      ordreAsc = !ordreAsc;
+      renderTaula();
+    });
+  });
+
+  actualitzaResultat();
+}
+
+function actualitzaResultat() {
+  // Dades de l'exemple de l'apartat 3
+  const t = 4.41;
+  const dfWelch = 4.90;
+  const dfArrodonit = Math.floor(dfWelch);
+
+  const { valor } = getValor(dfArrodonit, MAP_ALPHA[alphaActual].idx);
+
+  document.getElementById('resT').textContent = `t = ${t.toFixed(2).replace('.',',')}`;
+  document.getElementById('resDf').textContent =
+    `df ≈ ${dfWelch.toFixed(2).replace('.',',')} (arrodonit a ${dfArrodonit})`;
+  document.getElementById('resAlpha').textContent = alphaActual.replace('.',',');
+  document.getElementById('resCrit').textContent = valor.toFixed(3).replace('.',',');
+  document.getElementById('resCmp').textContent = t > valor ? '>' : '≤';
+  document.getElementById('resDecisio').textContent =
+    t > valor ? 'rebutgem H₀' : 'no rebutgem H₀';
+}
+
+/* Esdeveniments */
+document.getElementById('alphaSel').addEventListener('change', e => {
+  alphaActual = e.target.value;
+  renderTaula();
+});
+
+document.getElementById('dfInput').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  if (!isNaN(v) && v >= 1) {
+    dfDestacat = v;
+    renderTaula();
+  }
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  document.getElementById('alphaSel').value = '0.05';
+  document.getElementById('dfInput').value = 4;
+  alphaActual = '0.05';
+  dfDestacat = 4;
+  ordreAsc = true;
+  renderTaula();
+});
+
+renderTaula();
+</script>
+
+</body>
+</html>
+
+
+
